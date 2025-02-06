@@ -47,7 +47,7 @@ class server:
         self.tree = tree(0, 128)
 
     def save(self, data, index):
-        hash = int(hashlib.sha256(data.encode()).hexdigest(), 16)
+        hash = int(hashlib.sha256(data).hexdigest(), 16)
         self.tree.insert(data, hash, index)
         return hash
 

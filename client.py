@@ -1,9 +1,17 @@
 from server import server
 import hashlib
+import os
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64
+
 
 class tree:
     def __init__(self, l, r):
         self.l = l
+
         self.r = r
         self.hash = 0
         if r-l == 1: return
@@ -35,14 +43,26 @@ class tree:
 
 
 class client:
-    def __init__(self):
+    def __init__(self, password):
         self.tree = tree(0, 128)
+        self.salt = os.urandom(16)
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=self.salt,
+            iterations=1000000
+        )
+        self.key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        self.fernet = Fernet(self.key)
+
 
 
     def save_data(self, message, index):
+        message = self.fernet.encrypt(message.encode())
         path_hash = server.save(message, index) # faktiskt säkert och via nätverk måste fixas
 
-        hash = int(hashlib.sha256(message.encode()).hexdigest(), 16)
+        hash = int(hashlib.sha256(message).hexdigest(), 16)
         self.tree.insert(hash, index)
         if hash != path_hash:
             print("Imposter!!")
@@ -54,11 +74,11 @@ class client:
         if path_hash != self.tree.get_hash(index):
             print("Imposter!")
             return None
-        return data
+        return self.fernet.decrypt(data).decode()
 
 
 
-client = client()
+client = client("password")
 client.save_data("Hello", 0)
 client.save_data("Hello 2", 1)
 print(client.get_data(1))
