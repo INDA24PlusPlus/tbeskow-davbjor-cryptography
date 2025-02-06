@@ -13,7 +13,7 @@ class tree:
         self.l = l
 
         self.r = r
-        self.hash = 0
+        self.hash = ""
         if r-l == 1: return
         mid = (l + r) / 2
         self.lnode = tree(l, mid)
@@ -21,25 +21,25 @@ class tree:
 
 
     def insert(self, hash, index):
-        self.hash ^= hash
-        if self.r-self.l > 1:
+        if self.r-self.l == 1:
+            self.hash = hash
+        else:
             if index < self.lnode.r:
                 self.lnode.insert(hash, index)
             else:
                 self.rnode.insert(hash, index)
+            self.hash = hashlib.sha256((self.lnode.hash+self.rnode.hash).encode()).hexdigest()
 
     def remove(self, hash, index):
         self.insert(hash, index)
 
     def get_hash(self, index):
         if self.r-self.l == 1:
-            return [self.hash]
+            return self.hash
 
-        res = [self.hash]
-        if index < self.lnode.r: res.extend(self.lnode.get_hash(index))
-        else: res.extend(self.rnode.get_hash(index))
-        return res
-
+        if index < self.lnode.r: self.lnode.get_hash(index)
+        else: self.rnode.get_hash(index)
+        return self.hash
 
 
 class client:
@@ -58,22 +58,26 @@ class client:
 
 
 
-    def save_data(self, message, index):
-        message = self.fernet.encrypt(message.encode())
-        path_hash = server.save(message, index) # faktiskt säkert och via nätverk måste fixas
+    def save_data(self, data, index):
+        data = self.fernet.encrypt(data.encode())
+        server_hash = server.save(data, index) # faktiskt säkert och via nätverk måste fixas
 
-        hash = int(hashlib.sha256(message).hexdigest(), 16)
-        self.tree.insert(hash, index)
-        if hash != path_hash:
+        client_hash = hashlib.sha256(data).hexdigest()
+        self.tree.insert(client_hash, index)
+        if client_hash != server_hash:
+
+
             print("Imposter!!")
+
             self.tree.remove(hash, index)
 
 
     def get_data(self, index):
-        data, path_hash = server.get(index)
-        if path_hash != self.tree.get_hash(index):
+        data, server_hash = server.get(index)
+        if server_hash != self.tree.get_hash(index):
             print("Imposter!")
             return None
+
         return self.fernet.decrypt(data).decode()
 
 

@@ -4,7 +4,7 @@ class tree:
     def __init__(self, l, r):
         self.l = l
         self.r = r
-        self.hash = 0
+        self.hash = ""
         self.data = None
         if r-l == 1: return
         mid = (l + r) / 2
@@ -13,26 +13,26 @@ class tree:
 
 
     def insert(self, data, hash, index):
-        self.hash ^= hash
-        if self.r-self.l > 1:
+        if self.r-self.l == 1:
+            self.hash = hash
+            self.data = data
+        else:
             if index < self.lnode.r:
                 self.lnode.insert(data, hash, index)
             else:
                 self.rnode.insert(data, hash, index)
-        else:
-            self.data = data
+            self.hash = hashlib.sha256((self.lnode.hash + self.rnode.hash).encode()).hexdigest()
 
     def remove(self, hash, index):
         self.insert(hash, index)
 
     def get_hash(self, index):
-        if self.r-self.l == 1:
-            return [self.hash]
 
-        res = [self.hash]
-        if index < self.lnode.r: res.extend(self.lnode.get_hash(index))
-        else: res.extend(self.rnode.get_hash(index))
-        return res
+        if self.r-self.l > 1:
+            if index < self.lnode.r: self.lnode.get_hash(index)
+            else: self.rnode.get_hash(index)
+        return self.hash
+
     
     def get_data(self, index):
         if self.r-self.l == 1:
@@ -47,7 +47,7 @@ class server:
         self.tree = tree(0, 128)
 
     def save(self, data, index):
-        hash = int(hashlib.sha256(data).hexdigest(), 16)
+        hash = hashlib.sha256(data).hexdigest()
         self.tree.insert(data, hash, index)
         return hash
 
