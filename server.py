@@ -97,7 +97,7 @@ class server:
 
                 elif command == "get":
                     data, hash_value = self.get(index, client_index)
-                    response = {"status": "ok", "hash": hash_value, "data": data} # Vill vi skicka okrypterad data här?
+                    response = {"status": "ok", "hash": hash_value, "data": data}
                     
                 else:
                     response = {"status": "error", "message": "No valid command"}

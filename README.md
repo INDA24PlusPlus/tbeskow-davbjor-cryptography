@@ -1,4 +1,4 @@
 # tbeskow-davbjor-cryptography
 
-Orkar inte fixa nätverk än
-
+Server - client networking, encrypted storing of data.
+Needs authorization/signatures
